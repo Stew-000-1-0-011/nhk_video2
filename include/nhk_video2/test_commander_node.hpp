@@ -72,22 +72,22 @@ namespace NhkVideo2
 
 
 				/// @todo idの設定
-				auto arm_lift = make_shirasu(0x7FF, 10, 1);
+				auto arm_lift = make_shirasu(0x7FF, 100, 100);
 				/// @todo idの設定
-				auto elbow_motor = make_shirasu(0x7FF, 10, 1);
+				auto elbow_motor = make_shirasu(0x7FF, 100, 100);
 				Body::ElbowGear elbow{std::move(elbow_motor), 100, 0};
 				/// @todo idの設定
-				Body::CanPillarbox hand_pillar{*this, 0x7FF, 10};
+				Body::CanPillarbox hand_pillar{*this, 0x7FF, 100};
 				Body::SolenoidValve hand{std::move(hand_pillar)};
 
 				Body::Arm arm{std::move(arm_lift), std::move(elbow), std::move(hand)};
 
 
 				/// @todo idの設定
-				Body::CanPillarbox loader_turnout_pillar{*this, 0x7FF, 10};
+				Body::CanPillarbox loader_turnout_pillar{*this, 0x7FF, 100};
 				Body::TurnoutMotor loader_turnout{std::move(loader_turnout_pillar)};
 				/// @todo idの設定
-				Body::CanPillarbox loader_cocking_pillar{*this, 0x7FF, 10};
+				Body::CanPillarbox loader_cocking_pillar{*this, 0x7FF, 100};
 				Body::SolenoidValve loader_cocking{std::move(loader_cocking_pillar)};
 				
 				Body::Loader loader{std::move(loader_turnout), std::move(loader_cocking)};
@@ -97,27 +97,27 @@ namespace NhkVideo2
 				options.callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
 
 				/// @todo idの設定
-				Body::CanPillarbox tusk_l_pillar{*this, 0x7FF, 10};
+				Body::CanPillarbox tusk_l_pillar{*this, 0x7FF, 100};
 				/// @todo idの設定
-				Body::CanLetterboxMaker tusk_l_letter_maker{*this, 0x7FF, 10, options};
+				Body::CanLetterboxMaker tusk_l_letter_maker{*this, 0x7FF, 100, options};
 				/// @todo idの設定
-				auto tusk_l_gear_motor = make_shirasu(0x7FF, 10, 1);
-				Body::YawGear tusk_l_gear{std::move(tusk_l_gear_motor), 100, 0};
+				auto tusk_l_gear_motor = make_shirasu(0x7FF, 100, 100);
+				Body::YawGear tusk_l_gear{std::move(tusk_l_gear_motor), 1800, 0};
 				Body::Tusk tusk_l{make_inject_motor_up(std::move(tusk_l_pillar), std::move(tusk_l_letter_maker)), std::move(tusk_l_gear)};
 
 				/// @todo idの設定
-				Body::CanPillarbox tusk_r_pillar{*this, 0x7FF, 10};
+				Body::CanPillarbox tusk_r_pillar{*this, 0x7FF, 100};
 				/// @todo idの設定
-				Body::CanLetterboxMaker tusk_r_letter_maker{*this, 0x7FF, 10, options};
+				Body::CanLetterboxMaker tusk_r_letter_maker{*this, 0x7FF, 100, options};
 				/// @todo idの設定
-				auto tusk_r_gear_motor = make_shirasu(0x7FF, 10, 1);
+				auto tusk_r_gear_motor = make_shirasu(0x7FF, 100, 100);
 				Body::YawGear tusk_r_gear{std::move(tusk_r_gear_motor), 1800, 0};
 				Body::Tusk tusk_r{make_inject_motor_up(std::move(tusk_r_pillar), std::move(tusk_r_letter_maker)), std::move(tusk_r_gear)};
 
 				/// @todo idの設定
-				Body::CanPillarbox trunk_pillar{*this, 0x7FF, 10};
+				Body::CanPillarbox trunk_pillar{*this, 0x7FF, 100};
 				/// @todo idの設定
-				Body::CanLetterboxMaker trunk_letter_maker{*this, 0x7FF, 10, options};
+				Body::CanLetterboxMaker trunk_letter_maker{*this, 0x7FF, 100, options};
 				Body::Trunk trunk{make_inject_motor_up(std::move(trunk_pillar), std::move(trunk_letter_maker))};
 
 
@@ -129,6 +129,8 @@ namespace NhkVideo2
 
 			using namespace std::chrono_literals;
 			timer = this->create_wall_timer(1ms, std::bind(&TestCommanderNode::timer_callback, this));
+		
+			RCLCPP_INFO(this->get_logger(), "TestCommanderNode initialization finish.");
 		}
 
 		private:
