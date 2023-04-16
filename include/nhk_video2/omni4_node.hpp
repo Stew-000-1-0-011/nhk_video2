@@ -3,6 +3,7 @@
 #include <array>
 #include <optional>
 #include <string_view>
+#include <numbers>
 
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose2_d.hpp>
@@ -74,10 +75,10 @@ namespace NhkVideo2
 			}(*this, std::make_index_sequence<4>{});
 			#else
 			/// @todo 各種設定
-			omni_wheel_args[0] = OmniWheelArg{.pose={.point={1.0, 1.0}, .theta=0.0}, .reduction_ratio=61.0, .wheel_radius=0.127, .base_id=0x7FF};
-			omni_wheel_args[1] = OmniWheelArg{.pose={.point={1.0, 1.0}, .theta=0.0}, .reduction_ratio=61.0, .wheel_radius=0.127, .base_id=0x7FF};
-			omni_wheel_args[2] = OmniWheelArg{.pose={.point={1.0, 1.0}, .theta=0.0}, .reduction_ratio=61.0, .wheel_radius=0.127, .base_id=0x7FF};
-			omni_wheel_args[3] = OmniWheelArg{.pose={.point={1.0, 1.0}, .theta=0.0}, .reduction_ratio=61.0, .wheel_radius=0.127, .base_id=0x7FF};
+			omni_wheel_args[0] = OmniWheelArg{.pose={.point={0.4053625, 0.4053625}, .theta=std::numbers::pi / 4}, .reduction_ratio=61.0, .wheel_radius=0.127, .base_id=0x400};
+			omni_wheel_args[1] = OmniWheelArg{.pose={.point={-0.4053625, 0.4053625}, .theta=std::numbers::pi * 3 / 4}, .reduction_ratio=61.0, .wheel_radius=0.127, .base_id=0x404};
+			omni_wheel_args[2] = OmniWheelArg{.pose={.point={-0.4053625, -0.4053625}, .theta=std::numbers::pi * 5 / 4}, .reduction_ratio=61.0, .wheel_radius=0.127, .base_id=0x408};
+			omni_wheel_args[3] = OmniWheelArg{.pose={.point={0.4053625, -0.4053625}, .theta=std::numbers::pi * 7 / 4}, .reduction_ratio=61.0, .wheel_radius=0.127, .base_id=0x40C};
 			#endif
 
 			// OmniWheelの作成
@@ -88,8 +89,8 @@ namespace NhkVideo2
 					return RosReporter{self.get_logger(), rclcpp::Logger::Level::Error};
 				};
 
-				CanPillarbox command{self, 10, arg.base_id};
-				CanPillarbox target{self, 1, arg.base_id + 1};
+				CanPillarbox command{self, arg.base_id, 100};
+				CanPillarbox target{self, arg.base_id + 1, 100};
 				Shirasu shirasu{std::move(command), std::move(target), make_logger(self)};
 				shirasu.change_state(ShirasuState::velocity);
 				return OmniWheel{std::move(shirasu), std::move(arg.pose), arg.reduction_ratio, arg.wheel_radius};
@@ -102,6 +103,8 @@ namespace NhkVideo2
 			}(*this, std::make_index_sequence<4>{});
 
 			body_speed_sub = this->create_subscription<geometry_msgs::msg::Pose2D>("body_speed", 1, std::bind(&Omni4Node::callback, this, std::placeholders::_1));
+
+			RCLCPP_INFO(this->get_logger(), "Omni4 initialize finish.");
 		}
 
 		void callback(const geometry_msgs::msg::Pose2D& msg_pose)
