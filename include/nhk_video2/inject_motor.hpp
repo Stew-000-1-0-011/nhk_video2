@@ -66,12 +66,12 @@ namespace NhkVideo2
 		// callbackがあり、これが自身への参照を持っているので無理。
 		InjectMotor(InjectMotor&& other) = delete;
 
-		void inject(const float rpm)
+		void inject(const i16 rpm)
 		{
 			if(state == InjectorState::Free)
 			{
 				state = InjectorState::Busy;
-				CRSLib::Can::DataField data{.dlc=sizeof(float)};
+				CRSLib::Can::DataField data{.dlc=sizeof(rpm)};
 				std::memcpy(data.buffer, &rpm, sizeof(rpm));
 				pillarbox.post(data);
 			}
