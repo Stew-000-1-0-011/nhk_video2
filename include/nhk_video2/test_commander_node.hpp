@@ -141,7 +141,7 @@ namespace NhkVideo2
 		void timer_callback()
 		{
 			// omni4を初期化
-			if(logicool->is_pushed_down(KeyMap::Buttons::start))
+			if(logicool->is_pushed_down(KeyMap::Buttons::back))
 			{
 				std_msgs::msg::Empty msg{};
 				omni4_init_pub->publish(msg);

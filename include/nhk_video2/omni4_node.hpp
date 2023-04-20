@@ -37,7 +37,7 @@ namespace NhkVideo2
 		Omni4Node(const rclcpp::NodeOptions& options):
 			rclcpp::Node("omni4", options)
 		{
-			omni4_init_sub = this->create_subscription<std_msgs::msg::Empty>("omni4_init", 100, std::bind(&Omni4Node::omni4_init_callback, this));
+			omni4_init_sub = this->create_subscription<std_msgs::msg::Empty>("omni4_init", 100, std::bind(&Omni4Node::omni4_init_callback, this, std::placeholders::_1));
 		}
 
 		void callback(const geometry_msgs::msg::Pose2D& msg_pose)
@@ -45,7 +45,7 @@ namespace NhkVideo2
 			omni4->update(CRSLib::Math::Pose2D{{msg_pose.x, msg_pose.y}, msg_pose.theta});
 		}
 
-		void omni4_init_callback()
+		void omni4_init_callback(const std_msgs::msg::Empty&)
 		{
 			auto can_pub = this->create_publisher<can_plugins2::msg::Frame>("can_tx", 100);
 
