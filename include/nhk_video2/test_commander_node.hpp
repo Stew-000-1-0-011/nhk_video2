@@ -246,7 +246,7 @@ namespace NhkVideo2
 						{
 							tusk.yaw_gear.update_speed(constant.tusk_yaw_gear_speed);
 						}
-						else
+						else if(logicool->is_pushed_up(KeyMap::Buttons::rb) || logicool->is_pushed_up(KeyMap::Buttons::lb))
 						{
 							tusk.yaw_gear.update_speed(0.0);
 						}
@@ -257,14 +257,17 @@ namespace NhkVideo2
 					switch(chose_injector)
 					{
 						case ChoseInjector::left:
+						RCLCPP_INFO(this->get_logger(), "Left Tusk");
 						control_tusk(body->tusk_l);
 						break;
 
 						case ChoseInjector::right:
+						RCLCPP_INFO(this->get_logger(), "Right Tusk");
 						control_tusk(body->tusk_r);
 						break;
 
 						case ChoseInjector::center:
+						RCLCPP_INFO(this->get_logger(), "Trunk");
 						inject(body->center_trunk);
 						break;
 
