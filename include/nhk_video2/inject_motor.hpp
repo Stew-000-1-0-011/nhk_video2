@@ -3,7 +3,6 @@
 #include <cstring>
 #include <type_traits>
 #include <concepts>
-#include <optional>
 #include <memory>
 #include <atomic>
 #include <utility>
@@ -51,7 +50,7 @@ namespace NhkVideo2
 	{
 		Reporter reporter;
 		CanPillarbox pillarbox;
-		std::optional<CanLetterbox> letterbox{};
+		std::unique_ptr<CanLetterbox> letterbox{};
 		std::atomic<InjectorState> state{InjectorState::Free};
 		std::shared_ptr<Implement::Callback> callback{std::make_shared<Implement::Callback>(state)};
 
@@ -60,7 +59,7 @@ namespace NhkVideo2
 			reporter{std::move(reporter)},
 			pillarbox{std::move(pillarbox)}
 		{
-			letterbox.emplace(letterbox_maker(callback));
+			letterbox = letterbox_maker(callback);
 		}
 
 		// callbackがあり、これが自身への参照を持っているので無理。
@@ -91,6 +90,6 @@ namespace NhkVideo2
 	auto make_inject_motor(Reporter&& reporter, CanPillarbox&& pillarbox, CRSLib::Can::MainPC::letterbox_maker auto&& letterbox_maker)
 	requires std::is_rvalue_reference_v<decltype(reporter)> && std::is_rvalue_reference_v<decltype(pillarbox)> && std::is_rvalue_reference_v<decltype(letterbox_maker)>
 	{
-		return InjectMotor<Reporter, CanPillarbox, decltype(letterbox_maker(std::declval<std::shared_ptr<Implement::Callback>>()))>{std::move(reporter), std::move(pillarbox), std::move(letterbox_maker)};
+		return InjectMotor<Reporter, CanPillarbox, typename decltype(letterbox_maker(std::declval<std::shared_ptr<Implement::Callback>>()))::element_type>{std::move(reporter), std::move(pillarbox), std::move(letterbox_maker)};
 	}
 }
