@@ -6,6 +6,7 @@
 #include <ratio>
 
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/empty.hpp>
 #include <std_msgs/msg/float32.hpp>
 #include <geometry_msgs/msg/pose2_d.hpp>
 
@@ -31,15 +32,18 @@ namespace NhkVideo2
 		
 		std::optional<Logicool> logicool{};
 		std::optional<Body> body{};
+		bool omni4_inited{false};
 
 		rclcpp::Publisher<geometry_msgs::msg::Pose2D>::SharedPtr body_speed_pub{};
 		rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr inject_speed_pub{};
+		rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr omni4_init_pub{};
 		rclcpp::TimerBase::SharedPtr timer{};
 
 		public:
 		TestCommanderNode(const rclcpp::NodeOptions& options):
 			rclcpp::Node("test_commander", options)
 		{
+			const auto can_pub = this->create_publisher<can_plugins2::msg::Frame>("can_tx", 100);
 			{
 				rclcpp::SubscriptionOptions options{};
 				options.callback_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
@@ -51,9 +55,9 @@ namespace NhkVideo2
 				return Body::Reporter{this->get_logger(), rclcpp::Logger::Level::Error};
 			};
 
-			const auto make_shirasu = [this, make_reporter](const u32 id, const size_t command_queue_size, const size_t target_queue_size)
+			const auto make_shirasu = [this, make_reporter, can_pub](const u32 id)
 			{
-				return Body::Shirasu{Body::CanPillarbox{*this, id, command_queue_size}, Body::CanPillarbox{*this, id + 1, target_queue_size}, make_reporter()};
+				return Body::Shirasu{Body::CanPillarbox{can_pub, id}, Body::CanPillarbox{can_pub, id + 1}, make_reporter()};
 			};
 
 			const auto make_inject_motor_up = [this, make_reporter](Body::CanPillarbox&& pillar, Body::CanLetterboxMaker&& maker)
@@ -65,59 +69,58 @@ namespace NhkVideo2
 
 			{
 				/// @todo idの設定
-				Body::CanPillarbox kubi_pillar{*this, 0x7FF, 10};
+				Body::CanPillarbox kubi_pillar{can_pub, 0x7FF};
 				
 				/// @todo 向きと初期伸縮
 				Body::RokuroKubi kubi{Body::SolenoidValve{std::move(kubi_pillar)}};
 
 
 				/// @todo idの設定
-				auto arm_lift = make_shirasu(0x7FF, 100, 100);
+				auto arm_lift = make_shirasu(0x7FF);
 				/// @todo idの設定
-				auto elbow_motor = make_shirasu(0x7FF, 100, 100);
+				auto elbow_motor = make_shirasu(0x7FF);
 				Body::ElbowGear elbow{std::move(elbow_motor), 100, 0};
 				/// @todo idの設定
-				Body::CanPillarbox hand_pillar{*this, 0x7FF, 100};
+				Body::CanPillarbox hand_pillar{can_pub, 0x7FF};
 				Body::SolenoidValve hand{std::move(hand_pillar)};
 
 				Body::Arm arm{std::move(arm_lift), std::move(elbow), std::move(hand)};
 
 
 				/// @todo idの設定
-				Body::CanPillarbox loader_turnout_pillar{*this, 0x7FF, 100};
+				Body::CanPillarbox loader_turnout_pillar{can_pub, 0x7FF};
 				Body::TurnoutMotor loader_turnout{std::move(loader_turnout_pillar)};
 				/// @todo idの設定
-				Body::CanPillarbox loader_cocking_pillar{*this, 0x7FF, 100};
+				Body::CanPillarbox loader_cocking_pillar{can_pub, 0x7FF};
 				Body::SolenoidValve loader_cocking{std::move(loader_cocking_pillar)};
 				
 				Body::Loader loader{std::move(loader_turnout), std::move(loader_cocking)};
-
 
 				rclcpp::SubscriptionOptions options{};
 				options.callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
 
 				/// @todo idの設定
-				Body::CanPillarbox tusk_l_pillar{*this, 0x7FF, 100};
+				Body::CanPillarbox tusk_l_pillar{can_pub, 0x7FF};
 				/// @todo idの設定
-				Body::CanLetterboxMaker tusk_l_letter_maker{*this, 0x7FF, 100, options};
+				Body::CanLetterboxMaker tusk_l_letter_maker{*this, 0x7FF, options};
 				/// @todo idの設定
-				auto tusk_l_gear_motor = make_shirasu(0x7FF, 100, 100);
+				auto tusk_l_gear_motor = make_shirasu(0x7FF);
 				Body::YawGear tusk_l_gear{std::move(tusk_l_gear_motor), 1800, 0};
 				Body::Tusk tusk_l{make_inject_motor_up(std::move(tusk_l_pillar), std::move(tusk_l_letter_maker)), std::move(tusk_l_gear)};
 
 				/// @todo idの設定
-				Body::CanPillarbox tusk_r_pillar{*this, 0x7FF, 100};
+				Body::CanPillarbox tusk_r_pillar{can_pub, 0x7FF};
 				/// @todo idの設定
-				Body::CanLetterboxMaker tusk_r_letter_maker{*this, 0x7FF, 100, options};
+				Body::CanLetterboxMaker tusk_r_letter_maker{*this, 0x7FF, options};
 				/// @todo idの設定
-				auto tusk_r_gear_motor = make_shirasu(0x7FF, 100, 100);
+				auto tusk_r_gear_motor = make_shirasu(0x7FF);
 				Body::YawGear tusk_r_gear{std::move(tusk_r_gear_motor), 1800, 0};
 				Body::Tusk tusk_r{make_inject_motor_up(std::move(tusk_r_pillar), std::move(tusk_r_letter_maker)), std::move(tusk_r_gear)};
 
 				/// @todo idの設定
-				Body::CanPillarbox trunk_pillar{*this, 0x7FF, 100};
+				Body::CanPillarbox trunk_pillar{can_pub, 0x7FF};
 				/// @todo idの設定
-				Body::CanLetterboxMaker trunk_letter_maker{*this, 0x7FF, 100, options};
+				Body::CanLetterboxMaker trunk_letter_maker{*this, 0x7FF, options};
 				Body::Trunk trunk{make_inject_motor_up(std::move(trunk_pillar), std::move(trunk_letter_maker))};
 
 
@@ -126,6 +129,7 @@ namespace NhkVideo2
 
 			body_speed_pub = this->create_publisher<geometry_msgs::msg::Pose2D>("body_speed", 1);
 			inject_speed_pub = this->create_publisher<std_msgs::msg::Float32>("inject_speed", 1);
+			omni4_init_pub = this->create_publisher<std_msgs::msg::Empty>("omni4_init", 100);
 
 			using namespace std::chrono_literals;
 			timer = this->create_wall_timer(1ms, std::bind(&TestCommanderNode::timer_callback, this));
@@ -136,6 +140,13 @@ namespace NhkVideo2
 		private:
 		void timer_callback()
 		{
+			// omni4を初期化
+			if(logicool->is_pushed_down(KeyMap::Buttons::start))
+			{
+				std_msgs::msg::Empty msg{};
+				omni4_init_pub->publish(msg);
+			}
+
 			// ここでlogicoolの値を読み取って、omni4に渡す
 			{
 				geometry_msgs::msg::Pose2D msg{};
