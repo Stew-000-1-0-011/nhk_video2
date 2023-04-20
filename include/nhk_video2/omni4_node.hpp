@@ -6,6 +6,7 @@
 #include <numbers>
 
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/empty.hpp>
 #include <geometry_msgs/msg/pose2_d.hpp>
 
 #include <CRSLibtmp/std_type.hpp>
@@ -30,17 +31,31 @@ namespace NhkVideo2
 	{
 		std::optional<OmniN<OmniWheel, OmniWheel, OmniWheel, OmniWheel>> omni4{};
 		rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr body_speed_sub{};
+		rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr omni4_init_sub{};
 
 		public:
 		Omni4Node(const rclcpp::NodeOptions& options):
 			rclcpp::Node("omni4", options)
 		{
+			omni4_init_sub = this->create_subscription<std_msgs::msg::Empty>("omni4_init", 100, std::bind(&Omni4Node::omni4_init_callback, this));
+		}
+
+		void callback(const geometry_msgs::msg::Pose2D& msg_pose)
+		{
+			omni4->update(CRSLib::Math::Pose2D{{msg_pose.x, msg_pose.y}, msg_pose.theta});
+		}
+
+		void omni4_init_callback()
+		{
+			auto can_pub = this->create_publisher<can_plugins2::msg::Frame>("can_tx", 100);
+
 			struct OmniWheelArg final
 			{
 				CRSLib::Math::Pose2D pose;
 				double reduction_ratio;
 				double wheel_radius;
 				u32 base_id;
+
 
 				#if 0 //adadhochoc!
 				void read(Omni4Node& self, const std::string_view key)
@@ -82,34 +97,31 @@ namespace NhkVideo2
 			#endif
 
 			// OmniWheelの作成
-			constexpr auto make_omni_wheel = [](OmniWheelArg&& arg, Omni4Node& self) -> OmniWheel
+			const auto make_omni_wheel = [this](OmniWheelArg&& arg, const auto& can_pub) -> OmniWheel
 			{
-				constexpr auto make_logger = [](Omni4Node& self)
+				const auto make_logger = [logger = this->get_logger()]()
 				{
-					return RosReporter{self.get_logger(), rclcpp::Logger::Level::Error};
+					return RosReporter{logger, rclcpp::Logger::Level::Error};
 				};
 
-				CanPillarbox command{self, arg.base_id, 100};
-				CanPillarbox target{self, arg.base_id + 1, 100};
-				Shirasu shirasu{std::move(command), std::move(target), make_logger(self)};
+				CanPillarbox command{can_pub, arg.base_id};
+				CanPillarbox target{can_pub, arg.base_id + 1};
+				Shirasu shirasu{std::move(command), std::move(target), make_logger()};
+
 				shirasu.change_state(ShirasuState::velocity);
+				
 				return OmniWheel{std::move(shirasu), std::move(arg.pose), arg.reduction_ratio, arg.wheel_radius};
 			};
 			
 			// 作成を実行
-			[&omni_wheel_args, make_omni_wheel]<size_t ... indices>(Omni4Node& self, std::index_sequence<indices ...>)
+			[this, &omni_wheel_args, make_omni_wheel]<size_t ... indices>(const auto& can_pub, std::index_sequence<indices ...>)
 			{
-				self.omni4.emplace(make_omni_wheel(std::move(omni_wheel_args[indices]), self) ...);
-			}(*this, std::make_index_sequence<4>{});
+				this->omni4.emplace(make_omni_wheel(std::move(omni_wheel_args[indices]), can_pub) ...);
+			}(can_pub, std::make_index_sequence<4>{});
 
 			body_speed_sub = this->create_subscription<geometry_msgs::msg::Pose2D>("body_speed", 1, std::bind(&Omni4Node::callback, this, std::placeholders::_1));
 
 			RCLCPP_INFO(this->get_logger(), "Omni4 initialize finish.");
-		}
-
-		void callback(const geometry_msgs::msg::Pose2D& msg_pose)
-		{
-			omni4->update(CRSLib::Math::Pose2D{{msg_pose.x, msg_pose.y}, msg_pose.theta});
 		}
 	};
 }
