@@ -90,10 +90,10 @@ namespace NhkVideo2
 			}(*this, std::make_index_sequence<4>{});
 			#else
 			/// @todo 各種設定
-			omni_wheel_args[0] = OmniWheelArg{.pose={.point={0.4053625, 0.4053625}, .theta=std::numbers::pi / 4}, .reduction_ratio=61.0, .wheel_radius=0.127, .base_id=0x400};
-			omni_wheel_args[1] = OmniWheelArg{.pose={.point={-0.4053625, 0.4053625}, .theta=std::numbers::pi * 3 / 4}, .reduction_ratio=61.0, .wheel_radius=0.127, .base_id=0x404};
-			omni_wheel_args[2] = OmniWheelArg{.pose={.point={-0.4053625, -0.4053625}, .theta=std::numbers::pi * 5 / 4}, .reduction_ratio=61.0, .wheel_radius=0.127, .base_id=0x408};
-			omni_wheel_args[3] = OmniWheelArg{.pose={.point={0.4053625, -0.4053625}, .theta=std::numbers::pi * 7 / 4}, .reduction_ratio=61.0, .wheel_radius=0.127, .base_id=0x40C};
+			omni_wheel_args[0] = OmniWheelArg{.pose={.point={0.4053625, 0.4053625}, .theta=std::numbers::pi / 4}, .reduction_ratio=61.0, .wheel_radius=0.127, .base_id=0x160};
+			omni_wheel_args[1] = OmniWheelArg{.pose={.point={-0.4053625, 0.4053625}, .theta=std::numbers::pi * 3 / 4}, .reduction_ratio=61.0, .wheel_radius=0.127, .base_id=0x164};
+			omni_wheel_args[2] = OmniWheelArg{.pose={.point={-0.4053625, -0.4053625}, .theta=std::numbers::pi * 5 / 4}, .reduction_ratio=61.0, .wheel_radius=0.127, .base_id=0x168};
+			omni_wheel_args[3] = OmniWheelArg{.pose={.point={0.4053625, -0.4053625}, .theta=std::numbers::pi * 7 / 4}, .reduction_ratio=61.0, .wheel_radius=0.127, .base_id=0x16C};
 			#endif
 
 			// OmniWheelの作成
