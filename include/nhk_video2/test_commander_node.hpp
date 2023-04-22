@@ -88,7 +88,7 @@ namespace NhkVideo2
 
 
 				/// @todo idの設定
-				Body::CanPillarbox loader_turnout_pillar{can_pub, 0x120};
+				Body::CanPillarbox loader_turnout_pillar{can_pub, 0x110};
 				Body::TurnoutMotor loader_turnout{std::move(loader_turnout_pillar)};
 				/// @todo idの設定
 				Body::CanPillarbox loader_cocking_pillar{can_pub, 0x103};
