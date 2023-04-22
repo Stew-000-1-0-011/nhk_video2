@@ -218,7 +218,7 @@ namespace NhkVideo2
 					// 射出
 					const auto inject = [this](auto& injector)
 					{
-						if(logicool->is_being_pushed(KeyMap::Buttons::a))
+						if(logicool->is_pushed_down(KeyMap::Buttons::a))
 						{
 							injector.inject_motor_up->inject();
 						}
