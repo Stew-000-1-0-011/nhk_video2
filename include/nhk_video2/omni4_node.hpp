@@ -108,7 +108,7 @@ namespace NhkVideo2
 				CanPillarbox target{can_pub, arg.base_id + 1};
 				Shirasu shirasu{std::move(command), std::move(target), make_logger()};
 
-				shirasu.change_state(ShirasuState::velocity);
+				shirasu.change_state(ShirasuState::recover_velocity);
 				
 				return OmniWheel{std::move(shirasu), std::move(arg.pose), arg.reduction_ratio, arg.wheel_radius};
 			};
