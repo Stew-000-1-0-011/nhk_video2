@@ -102,26 +102,20 @@ namespace NhkVideo2
 				/// @todo idの設定
 				Body::CanPillarbox tusk_l_pillar{can_pub, 0x120};
 				/// @todo idの設定
-				Body::CanLetterboxMaker tusk_l_letter_maker{*this, 0x130, options};
-				/// @todo idの設定
 				auto tusk_l_gear_motor = make_shirasu(0x150);
 				Body::YawGear tusk_l_gear{std::move(tusk_l_gear_motor), 1800, 0};
-				Body::Tusk tusk_l{make_inject_motor_up(std::move(tusk_l_pillar), std::move(tusk_l_letter_maker)), std::move(tusk_l_gear)};
+				Body::Tusk tusk_l{make_inject_motor_up(std::move(tusk_l_pillar)), std::move(tusk_l_gear)};
 
 				/// @todo idの設定
 				Body::CanPillarbox tusk_r_pillar{can_pub, 0x121};
 				/// @todo idの設定
-				Body::CanLetterboxMaker tusk_r_letter_maker{*this, 0x131, options};
-				/// @todo idの設定
 				auto tusk_r_gear_motor = make_shirasu(0x154);
 				Body::YawGear tusk_r_gear{std::move(tusk_r_gear_motor), 1800, 0};
-				Body::Tusk tusk_r{make_inject_motor_up(std::move(tusk_r_pillar), std::move(tusk_r_letter_maker)), std::move(tusk_r_gear)};
+				Body::Tusk tusk_r{make_inject_motor_up(std::move(tusk_r_pillar)), std::move(tusk_r_gear)};
 
 				/// @todo idの設定
 				Body::CanPillarbox trunk_pillar{can_pub, 0x122};
-				/// @todo idの設定
-				Body::CanLetterboxMaker trunk_letter_maker{*this, 0x132, options};
-				Body::Trunk trunk{make_inject_motor_up(std::move(trunk_pillar), std::move(trunk_letter_maker))};
+				Body::Trunk trunk{make_inject_motor_up(std::move(trunk_pillar))};
 
 
 				body.emplace(std::move(kubi), std::move(arm), std::move(loader), std::move(tusk_l), std::move(tusk_r), std::move(trunk));
