@@ -38,7 +38,7 @@ namespace NhkVideo2
 		/// @todo 方向の確認
 		using Loader = NhkVideo2::Loader<TurnoutMotor, SolenoidValve>;
 
-		using InjectMotor = NhkVideo2::InjectMotor<CanPillarbox>;
+		using InjectMotor = decltype(NhkVideo2::make_inject_motor(std::declval<Reporter>(), std::declval<CanPillarbox>(), std::declval<CanLetterboxMaker>()));
 		using YawGear = CRSLib::Mechanism::Gear<Shirasu>;
 		using Tusk = NhkVideo2::Tusk<InjectMotor, YawGear>;
 		

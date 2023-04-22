@@ -60,9 +60,9 @@ namespace NhkVideo2
 				return Body::Shirasu{Body::CanPillarbox{can_pub, id}, Body::CanPillarbox{can_pub, id + 1}, make_reporter()};
 			};
 
-			const auto make_inject_motor_up = [this](Body::CanPillarbox&& pillar)
+			const auto make_inject_motor_up = [this, make_reporter](Body::CanPillarbox&& pillar, Body::CanLetterboxMaker&& maker)
 			{
-				return std::make_unique<Body::InjectMotor>(std::move(pillar));
+				return std::make_unique<Body::InjectMotor>(make_reporter(), std::move(pillar), std::move(maker));
 			};
 
 			/// @todo constantの実行時の読み出し、bodyの実行時の情報による初期化
@@ -140,7 +140,7 @@ namespace NhkVideo2
 		private:
 		void timer_callback()
 		{
-			// omni4を初期化(連打可能)
+			// omni4を初期化
 			if(logicool->is_pushed_down(KeyMap::Buttons::back))
 			{
 				std_msgs::msg::Empty msg{};
@@ -216,7 +216,6 @@ namespace NhkVideo2
 					if(logicool->is_pushed_down(KeyMap::Buttons::y))
 					{
 						body->loader.cocking.extend();
-						/// @todo これ処理をブロックしてないか？　ブロックしているなら、ブロックしないようにしたほうがいいかも
 						rclcpp::sleep_for(std::chrono::milliseconds(100));
 						body->loader.cocking.contract();
 					}
@@ -224,9 +223,15 @@ namespace NhkVideo2
 					// 射出
 					const auto inject = [this](auto& injector)
 					{
-						if(logicool->is_being_pushed(KeyMap::Buttons::a))
+						const auto inject_speed = logicool->get_axis(KeyMap::Axes::r_stick_UD) * constant.injection_speed;
+
+						std_msgs::msg::Float32 msg{};
+						msg.data = inject_speed;
+						inject_speed_pub->publish(msg);
+						
+						if(injector.inject_motor_up->get_state() == InjectorState::Free && logicool->is_being_pushed(KeyMap::Buttons::a))
 						{
-							injector.inject_motor_up->inject();
+							injector.inject_motor_up->inject(inject_speed);
 						}
 					};
 
