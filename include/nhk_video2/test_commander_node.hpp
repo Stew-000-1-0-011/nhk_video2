@@ -23,10 +23,10 @@ namespace NhkVideo2
 
 		struct Constant
 		{
-			double body_rotation_speed = 60.0;
-			double elbow_rotation_speed = 60.0;
-			double lift_speed = 60.0;
-			double tusk_yaw_gear_speed = 60.0;
+			double body_rotation_speed = 12.0;
+			double elbow_rotation_speed = 12.0;
+			double lift_speed = 48.0;  /// @todo 速すぎかも
+			double tusk_yaw_gear_speed = 0.8;
 			double injection_speed = 60.0;
 		} constant{};
 		
