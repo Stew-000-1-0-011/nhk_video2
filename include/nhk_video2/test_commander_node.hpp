@@ -60,7 +60,6 @@ namespace NhkVideo2
 			const auto make_shirasu = [this, make_reporter, can_pub](const u32 id)
 			{
 				auto ret = Body::Shirasu{Body::CanPillarbox{can_pub, id}, Body::CanPillarbox{can_pub, id + 1}, make_reporter()};
-				ret.change_state(CRSLib::Motor::ShirasuState::recover_velocity);
 				return ret;
 			};
 
@@ -136,13 +135,23 @@ namespace NhkVideo2
 		}
 
 		private:
+		void body_init()
+		{
+			body->arm.lift.change_state(CRSLib::Motor::ShirasuState::recover_velocity);
+			body->arm.elbow.motor.change_state(CRSLib::Motor::ShirasuState::recover_velocity);
+			body->tusk_l.yaw_gear.motor.change_state(CRSLib::Motor::ShirasuState::recover_velocity);
+			body->tusk_r.yaw_gear.motor.change_state(CRSLib::Motor::ShirasuState::recover_velocity);
+		}
+
 		void timer_callback()
 		{
-			// omni4を初期化(連打可能)
+			// 初期化(連打可能)
 			if(logicool->is_pushed_down(KeyMap::Buttons::back))
 			{
 				std_msgs::msg::Empty msg{};
 				omni4_init_pub->publish(msg);
+
+				body_init();
 			}
 
 			// ここでlogicoolの値を読み取って、omni4に渡す
