@@ -23,8 +23,8 @@ namespace NhkVideo2
 
 		struct Constant
 		{
-			double body_rotation_speed = 12.0 / 60.0 * 2 * std::numbers::pi;
-			double body_linear_speed = 1.0;
+			double body_rotation_speed = 60.0 / 60.0 * 2 * std::numbers::pi;
+			double body_linear_speed = 5.0;
 		
 			double elbow_rotation_speed = 12.0;
 			double lift_speed = 48.0;  /// @todo 速すぎかも
@@ -60,7 +60,10 @@ namespace NhkVideo2
 			const auto make_shirasu = [this, make_reporter, can_pub](const u32 id)
 			{
 				auto ret = Body::Shirasu{Body::CanPillarbox{can_pub, id}, Body::CanPillarbox{can_pub, id + 1}, make_reporter()};
+				
 				ret.change_state(CRSLib::Motor::ShirasuState::recover_velocity);
+				/// @todo これ処理をブロックしてないか？　ブロックしているなら、ブロックしないようにしたほうがいいかも
+				rclcpp::sleep_for(std::chrono::milliseconds(100));
 				return ret;
 			};
 
@@ -85,7 +88,7 @@ namespace NhkVideo2
 				auto elbow_motor = make_shirasu(0x144);
 				Body::ElbowGear elbow{std::move(elbow_motor), 1, 0};
 				/// @todo idの設定
-				Body::CanPillarbox hand_pillar{can_pub, 0x102};
+				Body::CanPillarbox hand_pillar{can_pub, 0x104};
 				Body::SolenoidValve hand{std::move(hand_pillar)};
 
 				Body::Arm arm{std::move(arm_lift), std::move(elbow), std::move(hand)};
@@ -145,15 +148,6 @@ namespace NhkVideo2
 				omni4_init_pub->publish(msg);
 			}
 
-			// ここでlogicoolの値を読み取って、omni4に渡す
-			{
-				geometry_msgs::msg::Pose2D msg{};
-				msg.x = logicool->get_axis(KeyMap::Axes::l_stick_LR) * constant.body_linear_speed;
-				msg.y = -logicool->get_axis(KeyMap::Axes::l_stick_UD) * constant.body_linear_speed;
-				msg.theta = logicool->is_being_pushed(KeyMap::Buttons::rb) ? constant.body_rotation_speed : logicool->is_being_pushed(KeyMap::Buttons::lb) ? -constant.body_rotation_speed : 0.0;
-				body_speed_pub->publish(msg);
-			}
-
 			// ろくろ首 射出と回収の切り替え
 			{
 				/// @todo 回収から装填機構へ受け渡しているときや、装填・射出をしているときに動かないようにする
@@ -168,22 +162,25 @@ namespace NhkVideo2
 				// 回収する(ろくろ首が下がっている)
 				if(body->rokuro_kubi.solenoid_valve.is_extend)
 				{
+					// ここでlogicoolの値を読み取って、omni4に渡す
+					{
+						geometry_msgs::msg::Pose2D msg{};
+						msg.x = logicool->get_axis(KeyMap::Axes::l_stick_LR) * constant.body_linear_speed;
+						msg.y = -logicool->get_axis(KeyMap::Axes::l_stick_UD) * constant.body_linear_speed;
+						msg.theta = logicool->is_being_pushed(KeyMap::Buttons::rb) ? -constant.body_rotation_speed : logicool->is_being_pushed(KeyMap::Buttons::lb) ? constant.body_rotation_speed : 0.0;
+						body_speed_pub->publish(msg);
+					}
+
 					if(logicool->is_pushed_down(KeyMap::Buttons::a))
 					{
 						body->arm.hand.reverse();
 					}
 
 					const auto elbow_rotation_speed = logicool->get_axis(KeyMap::Axes::cross_LR) * constant.elbow_rotation_speed;
-					const auto lift_speed = logicool->get_axis(KeyMap::Axes::cross_UD) * constant.lift_speed;
+					const auto lift_speed = -logicool->get_axis(KeyMap::Axes::cross_UD) * constant.lift_speed;
 
-					if(elbow_rotation_speed != 0.0)
-					{
-						body->arm.elbow.update_speed(elbow_rotation_speed);
-					}
-					else if(lift_speed != 0.0)
-					{
-						body->arm.lift.update_speed(lift_speed);
-					}
+					body->arm.elbow.update_speed(elbow_rotation_speed);
+					body->arm.lift.update_speed(lift_speed);
 				}
 				// 装填・射出する(ろくろ首が上がっている)
 				else
@@ -199,11 +196,20 @@ namespace NhkVideo2
 					if(const auto lr = logicool->get_axis(KeyMap::Axes::cross_LR))
 					{
 						/// @todo 向き確認
-						chose_injector = std::signbit(lr) ? ChoseInjector::left : ChoseInjector::right;
+						chose_injector = std::signbit(lr) ? ChoseInjector::right : ChoseInjector::left;
 					}
 					else if(const auto ud = logicool->get_axis(KeyMap::Axes::cross_UD))
 					{
-						chose_injector = std::signbit(ud) ? ChoseInjector::center : ChoseInjector::none;
+						chose_injector = std::signbit(ud) ? ChoseInjector::none : ChoseInjector::center;
+					}
+
+					if(logicool->is_pushed_down(KeyMap::Buttons::x))
+					{
+						if(chose_injector != ChoseInjector::none)
+						{
+							LoadDestination which = static_cast<LoadDestination>(CRSLib::to_underlying(chose_injector) - 1);
+							body->loader.turnout.turn(which);
+						}
 					}
 
 					// 装填
@@ -211,7 +217,7 @@ namespace NhkVideo2
 					{
 						body->loader.cocking.extend();
 						/// @todo これ処理をブロックしてないか？　ブロックしているなら、ブロックしないようにしたほうがいいかも
-						rclcpp::sleep_for(std::chrono::milliseconds(100));
+						rclcpp::sleep_for(std::chrono::milliseconds(1000));
 						body->loader.cocking.contract();
 					}
 
