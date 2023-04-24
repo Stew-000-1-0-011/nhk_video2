@@ -23,7 +23,9 @@ namespace NhkVideo2
 
 		struct Constant
 		{
-			double body_rotation_speed = 12.0;
+			double body_rotation_speed = 12.0 / 60.0 * 2 * std::numbers::pi;
+			double body_linear_speed = 1.0;
+		
 			double elbow_rotation_speed = 12.0;
 			double lift_speed = 48.0;  /// @todo 速すぎかも
 			double tusk_yaw_gear_speed = 0.8;
@@ -59,7 +61,7 @@ namespace NhkVideo2
 			{
 				auto ret = Body::Shirasu{Body::CanPillarbox{can_pub, id}, Body::CanPillarbox{can_pub, id + 1}, make_reporter()};
 				ret.change_state(CRSLib::Motor::ShirasuState::recover_velocity);
-				return std::move(ret);
+				return ret;
 			};
 
 			const auto make_inject_motor_up = [this](Body::CanPillarbox&& pillar)
@@ -81,7 +83,7 @@ namespace NhkVideo2
 				auto arm_lift = make_shirasu(0x140);
 				/// @todo idの設定
 				auto elbow_motor = make_shirasu(0x144);
-				Body::ElbowGear elbow{std::move(elbow_motor), 100, 0};
+				Body::ElbowGear elbow{std::move(elbow_motor), 1, 0};
 				/// @todo idの設定
 				Body::CanPillarbox hand_pillar{can_pub, 0x102};
 				Body::SolenoidValve hand{std::move(hand_pillar)};
@@ -105,14 +107,14 @@ namespace NhkVideo2
 				Body::CanPillarbox tusk_l_pillar{can_pub, 0x120};
 				/// @todo idの設定
 				auto tusk_l_gear_motor = make_shirasu(0x150);
-				Body::YawGear tusk_l_gear{std::move(tusk_l_gear_motor), 1800, 0};
+				Body::YawGear tusk_l_gear{std::move(tusk_l_gear_motor), 18, 0};
 				Body::Tusk tusk_l{make_inject_motor_up(std::move(tusk_l_pillar)), std::move(tusk_l_gear)};
 
 				/// @todo idの設定
 				Body::CanPillarbox tusk_r_pillar{can_pub, 0x121};
 				/// @todo idの設定
 				auto tusk_r_gear_motor = make_shirasu(0x154);
-				Body::YawGear tusk_r_gear{std::move(tusk_r_gear_motor), 1800, 0};
+				Body::YawGear tusk_r_gear{std::move(tusk_r_gear_motor), 18, 0};
 				Body::Tusk tusk_r{make_inject_motor_up(std::move(tusk_r_pillar)), std::move(tusk_r_gear)};
 
 				/// @todo idの設定
@@ -146,14 +148,10 @@ namespace NhkVideo2
 			// ここでlogicoolの値を読み取って、omni4に渡す
 			{
 				geometry_msgs::msg::Pose2D msg{};
-				msg.x = -logicool->get_axis(KeyMap::Axes::l_stick_UD);
-				msg.y = logicool->get_axis(KeyMap::Axes::l_stick_LR);
+				msg.x = logicool->get_axis(KeyMap::Axes::l_stick_LR) * constant.body_linear_speed;
+				msg.y = -logicool->get_axis(KeyMap::Axes::l_stick_UD) * constant.body_linear_speed;
 				msg.theta = logicool->is_being_pushed(KeyMap::Buttons::rb) ? constant.body_rotation_speed : logicool->is_being_pushed(KeyMap::Buttons::lb) ? -constant.body_rotation_speed : 0.0;
-
-				if(msg.x != 0.0 || msg.y != 0.0 || msg.theta != 0.0)
-				{
-					body_speed_pub->publish(msg);
-				}
+				body_speed_pub->publish(msg);
 			}
 
 			// ろくろ首 射出と回収の切り替え
