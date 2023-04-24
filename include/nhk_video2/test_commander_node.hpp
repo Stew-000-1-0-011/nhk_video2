@@ -57,7 +57,9 @@ namespace NhkVideo2
 
 			const auto make_shirasu = [this, make_reporter, can_pub](const u32 id)
 			{
-				return Body::Shirasu{Body::CanPillarbox{can_pub, id}, Body::CanPillarbox{can_pub, id + 1}, make_reporter()};
+				auto ret = Body::Shirasu{Body::CanPillarbox{can_pub, id}, Body::CanPillarbox{can_pub, id + 1}, make_reporter()};
+				ret.change_state(CRSLib::Motor::ShirasuState::recover_velocity);
+				return std::move(ret);
 			};
 
 			const auto make_inject_motor_up = [this](Body::CanPillarbox&& pillar)
